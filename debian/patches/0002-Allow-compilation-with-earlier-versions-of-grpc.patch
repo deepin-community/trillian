@@ -1,0 +1,227 @@
+From: Reinhard Tartler <siretart@tauware.de>
+Date: Sun, 23 Jun 2024 06:19:36 -0400
+Subject: Allow compilation with earlier versions of grpc
+
+The syntax for allowing insecure connection was slightly simpler
+---
+ client/rpcflags/rpcflags.go                 | 3 +--
+ client/rpcflags/rpcflags_test.go            | 3 +--
+ integration/admin/admin_integration_test.go | 3 +--
+ integration/log_integration_test.go         | 3 +--
+ integration/quota/quota_test.go             | 3 +--
+ quota/etcd/quotaapi/quota_server_test.go    | 3 +--
+ storage/cloudspanner/getdb_test.go          | 3 +--
+ testonly/integration/logenv.go              | 3 +--
+ testonly/mdm/mdmtest/main.go                | 3 +--
+ testonly/mock_server.go                     | 3 +--
+ 10 files changed, 10 insertions(+), 20 deletions(-)
+
+diff --git a/client/rpcflags/rpcflags.go b/client/rpcflags/rpcflags.go
+index 2f7cb1b..22f8b46 100644
+--- a/client/rpcflags/rpcflags.go
++++ b/client/rpcflags/rpcflags.go
+@@ -20,7 +20,6 @@ import (
+ 
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/credentials"
+-	"google.golang.org/grpc/credentials/insecure"
+ 	"k8s.io/klog/v2"
+ )
+ 
+@@ -34,7 +33,7 @@ func NewClientDialOptionsFromFlags() ([]grpc.DialOption, error) {
+ 
+ 	if *tlsCertFile == "" {
+ 		klog.Warning("Using an insecure gRPC connection to Trillian")
+-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
++		dialOpts = append(dialOpts, grpc.WithInsecure())
+ 	} else {
+ 		creds, err := credentials.NewClientTLSFromFile(*tlsCertFile, "")
+ 		if err != nil {
+diff --git a/client/rpcflags/rpcflags_test.go b/client/rpcflags/rpcflags_test.go
+index 675770b..e3b23d2 100644
+--- a/client/rpcflags/rpcflags_test.go
++++ b/client/rpcflags/rpcflags_test.go
+@@ -27,14 +27,13 @@ import (
+ 	"github.com/google/trillian/testonly/setup"
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/credentials"
+-	"google.golang.org/grpc/credentials/insecure"
+ )
+ 
+ func TestNewClientDialOptionsFromFlagsWithTLSCertFileNotSet(t *testing.T) {
+ 	// Set up Trillian servers
+ 	const numSequencers = 2
+ 	serverOpts := []grpc.ServerOption{}
+-	clientOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
++	clientOpts := []grpc.DialOption{grpc.WithInsecure())
+ 	logEnv, err := integration.NewLogEnvWithGRPCOptions(context.Background(), numSequencers, serverOpts, clientOpts)
+ 	if err != nil {
+ 		t.Fatal(err)
+diff --git a/integration/admin/admin_integration_test.go b/integration/admin/admin_integration_test.go
+index 2fdf434..1536f32 100644
+--- a/integration/admin/admin_integration_test.go
++++ b/integration/admin/admin_integration_test.go
+@@ -31,7 +31,6 @@ import (
+ 	"google.golang.org/genproto/protobuf/field_mask"
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/codes"
+-	"google.golang.org/grpc/credentials/insecure"
+ 	"google.golang.org/grpc/status"
+ 	"google.golang.org/protobuf/proto"
+ 	"google.golang.org/protobuf/types/known/timestamppb"
+@@ -607,7 +606,7 @@ func setupAdminServer(ctx context.Context, t *testing.T) (*testServer, error) {
+ 		}
+ 	}()
+ 
+-	ts.conn, err = grpc.Dial(ts.lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
++	ts.conn, err = grpc.Dial(ts.lis.Addr().String(), grpc.WithInsecure())
+ 	if err != nil {
+ 		ts.closeAll()
+ 		return nil, err
+diff --git a/integration/log_integration_test.go b/integration/log_integration_test.go
+index bf2076e..c7a7975 100644
+--- a/integration/log_integration_test.go
++++ b/integration/log_integration_test.go
+@@ -21,7 +21,6 @@ import (
+ 	"time"
+ 
+ 	"google.golang.org/grpc"
+-	"google.golang.org/grpc/credentials/insecure"
+ 
+ 	"github.com/google/trillian"
+ 	"github.com/google/trillian/client"
+@@ -81,7 +80,7 @@ func TestLiveLogIntegration(t *testing.T) {
+ 	defer cancel()
+ 
+ 	// TODO: Other options apart from insecure connections
+-	conn, err := grpc.DialContext(ctx, *serverFlag, grpc.WithTransportCredentials(insecure.NewCredentials()))
++	conn, err := grpc.DialContext(ctx, *serverFlag, grpc.WithInsecure())
+ 	if err != nil {
+ 		t.Fatalf("Failed to connect to log server: %v", err)
+ 	}
+diff --git a/integration/quota/quota_test.go b/integration/quota/quota_test.go
+index e43a2e7..d894894 100644
+--- a/integration/quota/quota_test.go
++++ b/integration/quota/quota_test.go
+@@ -41,7 +41,6 @@ import (
+ 	"github.com/google/trillian/util/clock"
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/codes"
+-	"google.golang.org/grpc/credentials/insecure"
+ 	"google.golang.org/grpc/status"
+ 	"k8s.io/klog/v2"
+ 
+@@ -245,7 +244,7 @@ func newTestServer(registry extension.Registry) (*testServer, error) {
+ 		s.close()
+ 		return nil, err
+ 	}
+-	s.conn, err = grpc.Dial(s.lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
++	s.conn, err = grpc.Dial(s.lis.Addr().String(), grpc.WithInsecure())
+ 	if err != nil {
+ 		s.close()
+ 		return nil, err
+diff --git a/quota/etcd/quotaapi/quota_server_test.go b/quota/etcd/quotaapi/quota_server_test.go
+index 5a98a12..59fabc7 100644
+--- a/quota/etcd/quotaapi/quota_server_test.go
++++ b/quota/etcd/quotaapi/quota_server_test.go
+@@ -36,7 +36,6 @@ import (
+ 	"google.golang.org/genproto/protobuf/field_mask"
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/codes"
+-	"google.golang.org/grpc/credentials/insecure"
+ 	"google.golang.org/grpc/status"
+ 	"google.golang.org/protobuf/proto"
+ )
+@@ -806,7 +805,7 @@ func startServer(etcdClient *clientv3.Client) (quotapb.QuotaClient, func(), erro
+ 	quotapb.RegisterQuotaServer(s, NewServer(etcdClient))
+ 	go func() { _ = s.Serve(lis) }()
+ 
+-	conn, err = grpc.Dial(lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
++	conn, err = grpc.Dial(lis.Addr().String(), grpc.WithInsecure())
+ 	if err != nil {
+ 		cleanup()
+ 		return nil, nil, err
+diff --git a/storage/cloudspanner/getdb_test.go b/storage/cloudspanner/getdb_test.go
+index a309b0a..3c9a674 100644
+--- a/storage/cloudspanner/getdb_test.go
++++ b/storage/cloudspanner/getdb_test.go
+@@ -29,7 +29,6 @@ import (
+ 	"cloud.google.com/go/spanner/spannertest"
+ 	"google.golang.org/api/option"
+ 	"google.golang.org/grpc"
+-	"google.golang.org/grpc/credentials/insecure"
+ 
+ 	database "cloud.google.com/go/spanner/admin/database/apiv1"
+ 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
+@@ -95,7 +94,7 @@ func inMemClient(ctx context.Context, t testing.TB, dbName string, statements []
+ 	srv.SetLogger(t.Logf)
+ 	dialCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+ 	defer cancel()
+-	conn, err := grpc.DialContext(dialCtx, srv.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
++	conn, err := grpc.DialContext(dialCtx, srv.Addr, grpc.WithInsecure())
+ 	if err != nil {
+ 		t.Fatalf("Dialing in-memory fake: %v", err)
+ 	}
+diff --git a/testonly/integration/logenv.go b/testonly/integration/logenv.go
+index eb3a583..82c664e 100644
+--- a/testonly/integration/logenv.go
++++ b/testonly/integration/logenv.go
+@@ -24,7 +24,6 @@ import (
+ 	"time"
+ 
+ 	"google.golang.org/grpc"
+-	"google.golang.org/grpc/credentials/insecure"
+ 	"k8s.io/klog/v2"
+ 
+ 	"github.com/google/trillian"
+@@ -168,7 +167,7 @@ func NewLogEnvWithRegistryAndGRPCOptions(ctx context.Context, numSequencers int,
+ 
+ 	// Connect to the server.
+ 	if clientOpts == nil {
+-		clientOpts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
++		clientOpts = []grpc.DialOption{grpc.WithInsecure()}
+ 	}
+ 
+ 	cc, err := grpc.Dial(addr, clientOpts...)
+diff --git a/testonly/mdm/mdmtest/main.go b/testonly/mdm/mdmtest/main.go
+index d4ba271..39817fe 100644
+--- a/testonly/mdm/mdmtest/main.go
++++ b/testonly/mdm/mdmtest/main.go
+@@ -30,7 +30,6 @@ import (
+ 	"github.com/google/trillian/util"
+ 	"github.com/prometheus/client_golang/prometheus/promhttp"
+ 	"google.golang.org/grpc"
+-	"google.golang.org/grpc/credentials/insecure"
+ 	"google.golang.org/protobuf/types/known/durationpb"
+ 	"k8s.io/klog/v2"
+ )
+@@ -69,7 +68,7 @@ func innerMain(ctx context.Context) error {
+ 		}()
+ 	}
+ 
+-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
++	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+ 	c, err := grpc.Dial(*rpcServer, dialOpts...)
+ 	if err != nil {
+ 		klog.Exitf("Failed to create log client conn: %v", err)
+diff --git a/testonly/mock_server.go b/testonly/mock_server.go
+index 0a4a482..3664994 100644
+--- a/testonly/mock_server.go
++++ b/testonly/mock_server.go
+@@ -21,7 +21,6 @@ import (
+ 	"github.com/google/trillian"
+ 	"github.com/google/trillian/testonly/tmock"
+ 	"google.golang.org/grpc"
+-	"google.golang.org/grpc/credentials/insecure"
+ )
+ 
+ // MockServer implements the TrillianAdminServer, and TrillianLogServer.
+@@ -50,7 +49,7 @@ func NewMockServer(ctrl *gomock.Controller) (*MockServer, func(), error) {
+ 	}
+ 	go func() { _ = grpcServer.Serve(lis) }()
+ 
+-	cc, err := grpc.Dial(lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
++	cc, err := grpc.Dial(lis.Addr().String(), grpc.WithInsecure())
+ 	if err != nil {
+ 		grpcServer.Stop()
+ 		_ = lis.Close()

@@ -1,5 +1,27 @@
-template-repository (1.0-1) unstable; urgency=medium
+trillian (1.6.1-1) unstable; urgency=medium
 
-  * Initial release
+  * New upstream release.
+  * Standards-Version: 4.7.0.
 
- -- Tsic404 <liuheng@deepin.org>  Sat, 28 Jan 2023 13:46:49 +0800
+ -- Simon Josefsson <simon@josefsson.org>  Mon, 23 Sep 2024 20:06:57 +0200
+
+trillian (1.6.0-3) unstable; urgency=medium
+
+  * Team upload
+  * Disable quota plugin for redis. It has alpha status and not currently
+    in testing.
+
+ -- Reinhard Tartler <siretart@tauware.de>  Sun, 23 Jun 2024 18:09:31 -0400
+
+trillian (1.6.0-2) unstable; urgency=medium
+
+  * Team upload
+  * Upload to unstable
+
+ -- Reinhard Tartler <siretart@tauware.de>  Sun, 23 Jun 2024 06:12:16 -0400
+
+trillian (1.6.0-1) experimental; urgency=medium
+
+  * Initial release (Closes: #1060842)
+
+ -- Simon Josefsson <simon@josefsson.org>  Fri, 02 Feb 2024 00:34:34 +0100
