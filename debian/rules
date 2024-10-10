@@ -1,4 +1,34 @@
 #!/usr/bin/make -f
 
+export DH_GOLANG_EXCLUDES := \
+	^github.com/google/trillian/cmd				\
+	^github.com/google/trillian/docs			\
+	^github.com/google/trillian/experimental		\
+	^github.com/google/trillian/integration			\
+	^github.com/google/trillian/monitoring			\
+	^github.com/google/trillian/quota			\
+	^github.com/google/trillian/redis			\
+	^github.com/google/trillian/server			\
+	^github.com/google/trillian/storage/cloudspanner	\
+	^github.com/google/trillian/storage/crdb		\
+	^github.com/google/trillian/testonly			\
+	^github.com/google/trillian/util/election2/etcd
+
 %:
-	dh $@
+	dh $@ --builddirectory=_build --buildsystem=golang --with=golang
+
+override_dh_auto_install:
+	dh_auto_install -- --no-binaries
+
+override_dh_auto_test:
+# 2024/01/23 06:54:39 db.Ping(): dial tcp 127.0.0.1:3306: connect: connection refused
+# E0123 06:54:39.146285 3759376 storage_test.go:349] MySQL not available, skipping all MySQL storage tests
+# ok  	github.com/google/trillian/storage/mysql	0.007s
+# === RUN   TestMySQLWarning
+# 2024/01/23 06:54:39 db.Ping(): dial tcp 127.0.0.1:3306: connect: connection refused
+#     testdb_test.go:25: Deliberate test failure as a reminder that all storage-related tests are being skipped due to absent MySQL
+# --- FAIL: TestMySQLWarning (0.00s)
+# FAIL
+# FAIL	github.com/google/trillian/storage/testdb	0.009s
+	rm -fv _build/src/github.com/google/trillian/storage/testdb/testdb_test.go
+	: dh_auto_test $(DH_BUILD_OPTS)

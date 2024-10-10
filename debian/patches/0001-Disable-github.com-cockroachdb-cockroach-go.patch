@@ -1,0 +1,21 @@
+From: Simon Josefsson <simon@josefsson.org>
+Date: Wed, 17 Jan 2024 02:02:10 +0100
+Subject: [PATCH] Disable github.com/cockroachdb/cockroach-go.
+
+---
+ storage/crdb/provider.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/storage/crdb/provider.go b/storage/crdb/provider.go
+index 6ffdfa9..24e698a 100644
+--- a/storage/crdb/provider.go
++++ b/storage/crdb/provider.go
+@@ -23,7 +23,7 @@ import (
+ 	"github.com/google/trillian/storage"
+ 	"k8s.io/klog/v2"
+ 
+-	_ "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx" // crdb retries and postgres interface
++//	_ "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx" // crdb retries and postgres interface
+ 	_ "github.com/lib/pq"                                   // Register the Postgres driver.
+ )
+ 
